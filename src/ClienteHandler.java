@@ -78,14 +78,14 @@ public class ClienteHandler  implements Runnable {
         }
         out.println();
 
-        // Imprimir cada fila del tablero con letras (A-J) en el lateral izquierdo
+        // Imprimir cada fila del tablero con letras A-J
         for (int i = 0; i < size; i++) {
             out.print((char)('A' + i) + "   | ");
 
             for (int j = 0; j < size; j++) {
                 out.print(board[i][j] + "  | ");
             }
-            out.println(); // Salto de línea después de cada fila
+            out.println(); // Salto de línea
             out.println("    --------------------------------------------");
         }
     }
@@ -95,11 +95,11 @@ public class ClienteHandler  implements Runnable {
             for (int i=0; i<tamano; i++) {
                 if (fila+i >= size) {
                     System.out.println("No hay espacio suficiente para el barco en esta posición");
-                    return; // Sale si no hay espacio
+                    return; //Cancela
                 }
                 if (tablero[fila +i][columna] != '-') {
                     System.out.println("Ya hay un barco en esta posición.");
-                    return; // Sale si hay una colisión
+                    return; //Cancela
                 }
             }
 

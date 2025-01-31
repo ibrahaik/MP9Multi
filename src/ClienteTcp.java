@@ -20,7 +20,7 @@ public class ClienteTcp {
 
             boolean seguirEsperando = true;  // Controlamos el flujo del juego
 
-            // Leer mensaje de bienvenida e instrucciones iniciales
+            // Leer mensaje de servidor
             String serverMessage;
             while ((serverMessage = in.readLine()) != null) {
                 System.out.println(serverMessage);
@@ -30,18 +30,18 @@ public class ClienteTcp {
                     System.out.println(serverMessage);
                 }
 
-                // Colocar barco: cuando el servidor indique que debe colocarse
+                // Colocar barco
                 if (serverMessage.contains("Coloca el primer barco") || serverMessage.contains("Coloca el barco")) {
                     System.out.println("Introduce la coordenada para colocar el barco:");
                     String coordenada = scanner.nextLine();
-                    out.println(coordenada); // Enviamos la coordenada al servidor
+                    out.println(coordenada); // coordenada al servidor
                 }
 
                 // Si el servidor indica que el juego ha terminado, cambiar el flujo
                 if (serverMessage.contains("Juego terminado")) {
                     System.out.println("Juego finalizado.");
                     seguirEsperando = false;  // Cambiamos el flujo a false para terminar
-                    break; // Salimos del loop
+                    break;
                 }
             }
 
