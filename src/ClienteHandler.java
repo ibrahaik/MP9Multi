@@ -4,127 +4,130 @@ import java.io.InputStreamReader;
 import java.io.PrintWriter;
 import java.net.Socket;
 
-public class ClienteHandler  implements Runnable {
-
-    private static final int size = 10;
+public class ClienteHandler {
+    public static final int SIZE = 10;
     private Socket clientSocket;
     private String playerName;
-    private char[][] tablero;
+    private char[][] board;
+    private int[] barcosSizes = {3, 4, 2}; // 3 barcos
+    private PrintWriter out;
+    private BufferedReader in;
 
-    // Arreglo con tamaños de barcos predefinidos
-    private int[] tamañosBarcos = {3, 4, 2, 5, 3};
-    private int barcoActual = 0;  // Indica el índice del barco que se está colocando
-
-    public ClienteHandler(Socket clientSocket, String playerName) {
+    public ClienteHandler(Socket clientSocket, String playerName) throws IOException {
         this.clientSocket = clientSocket;
         this.playerName = playerName;
-        this.tablero = new char[size][size];
-        inicioTablero(this.tablero);
+        this.board = new char[SIZE][SIZE];
+        resetBoard();
+        this.out = new PrintWriter(clientSocket.getOutputStream(), true);
+        this.in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
+        out.println("¡Bienvenido " + playerName + "!");
+        enviarTablero();
     }
 
-    @Override
-    public void run() {
-        try {
-
-            PrintWriter out = new PrintWriter(clientSocket.getOutputStream(), true);
-            BufferedReader in = new BufferedReader(new InputStreamReader(clientSocket.getInputStream()));
-
-            out.println("¡Hola " + playerName + ", Bienvenido a hundir la flota !");
-            enviarTablero(out, tablero);
-
-            // Bucle para colocar los barcos
-            while (barcoActual < tamañosBarcos.length) {
-                out.println("Coloca el barco de tamaño " + tamañosBarcos[barcoActual] + " (Vertical):");
-                out.println("Introduce las coordenadas (por ejemplo: A1):");
-
-                String coordenada = in.readLine();
-                int fila = coordenada.charAt(0) - 'A';  // Convierte la letra a índice de fila
-                int columna = Integer.parseInt(coordenada.substring(1)) - 1;  // Convierte el número a índice de columna
-
-                // Colocamos el barco
-                colocarBarco(tablero, fila, columna, tamañosBarcos[barcoActual], true);  // Supongamos que todos los barcos son verticales
-
-                // Enviamos el tablero actualizado
-                enviarTablero(out, tablero);
-
-                // Incrementamos el índice del siguiente barco
-                barcoActual++;
-            }
-
-            out.println("¡Todos los barcos han sido colocados!");
-
-        } catch (IOException e) {
-            throw new RuntimeException(e);
-        }
+    public String getPlayerName() {
+        return playerName;
     }
 
-    private static void inicioTablero(char[][] tablero) {
-        for (int i = 0; i<size; i++) {
-            for (int j=0; j <size; j++) {
-                tablero[i][j] = '-';
+    public char[][] getBoard() {
+        return board;
+    }
+
+    public PrintWriter getOut() {
+        return out;
+    }
+
+    public BufferedReader getIn() {
+        return in;
+    }
+
+    public Socket getClientSocket() {
+        return clientSocket;
+    }
+
+    public void resetBoard() {
+        for (int i = 0; i < SIZE; i++) {
+            for (int j = 0; j < SIZE; j++) {
+                board[i][j] = '-';
             }
         }
     }
 
-    private static void enviarTablero(PrintWriter out, char[][] board) {
-        out.println("Tablero de juego");
-        out.print("     ");
-        for (int i = 0; i < size; i++) {
-            if (i < 9) {
-                out.print(i + 1 + "    ");
-            } else {
-                out.print(i + 1 + "   ");
-            }
+    public void enviarTablero() {
+        out.println("Tu Tablero de Juego:");
+        StringBuilder sb = new StringBuilder();
+        sb.append("     ");
+        for (int i = 0; i < SIZE; i++) {
+            sb.append((i + 1) + "    ");
         }
-        out.println();
-
-        // Imprimir cada fila del tablero con letras A-J
-        for (int i = 0; i < size; i++) {
-            out.print((char)('A' + i) + "   | ");
-
-            for (int j = 0; j < size; j++) {
-                out.print(board[i][j] + "  | ");
+        out.println(sb.toString());
+        for (int i = 0; i < SIZE; i++) {
+            sb = new StringBuilder();
+            sb.append((char) ('A' + i) + "   | ");
+            for (int j = 0; j < SIZE; j++) {
+                sb.append(board[i][j] + "  | ");
             }
-            out.println(); // Salto de línea
+
+
+
+
+
+            out.println(sb.toString());
             out.println("    --------------------------------------------");
         }
     }
 
-    private void colocarBarco(char[][] tablero, int fila, int columna, int tamano, boolean vertical) {
-        if (vertical) {
-            for (int i=0; i<tamano; i++) {
-                if (fila+i >= size) {
-                    System.out.println("No hay espacio suficiente para el barco en esta posición");
-                    return; //Cancela
-                }
-                if (tablero[fila +i][columna] != '-') {
-                    System.out.println("Ya hay un barco en esta posición.");
-                    return; //Cancela
-                }
-            }
+    public void colocarBarcos() throws IOException {
+        out.println("Inicia la colocación de tus barcos (verticalmente). Debes colocar 3 barcos.");
+        enviarTablero();
+        for (int i = 0; i < barcosSizes.length; i++) {
+            int shipSize = barcosSizes[i];
 
-            // Colocamos el barco
-            for (int i = 0; i < tamano; i++) {
-                tablero[fila + i][columna] = 'I';
-            }
 
-        } else {
-            for (int i = 0; i < tamano; i++) {
-                if (columna + i >= size) {
-                    System.out.println("No hay espacio suficiente para el barco en esta posición");
-                    return;
+            while (true) {
+                out.println("Coloca el barco de tamaño " + shipSize + ". Introduce la coordenada (Ej: A1):");
+                String coordenada = in.readLine();
+                if (coordenada == null || coordenada.length() < 2) {
+                    out.println("Entrada inválida. Intenta de nuevo.");
+                    continue;
                 }
-                if (tablero[fila][columna + i] != '-') {
-                    System.out.println("Ya hay un barco en esta posición");
-                    return;
-                }
-            }
+                int fila = coordenada.charAt(0) - 'A';
 
-            // Colocamos el barco
-            for (int i = 0; i < tamano; i++) {
-                tablero[fila][columna + i] = 'I';
+                int columna;
+                try {
+                    columna = Integer.parseInt(coordenada.substring(1)) - 1;
+                } catch (NumberFormatException e) {
+                    out.println("Formato inválido. Intenta de nuevo.");
+                    continue;
+                }
+                if (fila < 0 || fila >= SIZE || columna < 0 || columna >= SIZE) {
+                    out.println("Coordenada fuera de rango. Intenta de nuevo.");
+                    continue;
+                }
+                // ESPACIO BARCO VERTICALMENTE
+                if (fila + shipSize > SIZE) {
+                    out.println("No hay espacio suficiente para el barco. Intenta otra coordenada.");
+                    continue;
+                }
+                // NO BARCOS REPETIDOS
+                boolean canPlace = true;
+                for (int j = 0; j < shipSize; j++) {
+                    if (board[fila + j][columna] != '-') {
+                        canPlace = false;
+                        break;
+                    }
+                }
+                if (!canPlace) {
+                    out.println("El barco se superpone con otro. Intenta de nuevo.");
+                    continue;
+                }
+                // Colocar el barco marcándolo con 'I'
+                for (int j = 0; j < shipSize; j++) {
+                    board[fila + j][columna] = 'I';
+                }
+                enviarTablero();
+                break;
             }
         }
+        out.println("¡Todos los barcos han sido colocados!");
     }
-
 }
